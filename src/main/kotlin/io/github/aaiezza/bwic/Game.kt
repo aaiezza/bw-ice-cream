@@ -40,3 +40,35 @@ class Game(
         }
     }
 }
+
+enum class TurnPhase {
+    RevealCard,
+    GuessFlavor,
+    ResolveGuess,
+    EndTurn
+}
+
+data class TurnState(
+    val number: TurnNumber,
+    val currentPlayerIndex: Int,
+    val phase: TurnPhase
+)
+
+data class GameState(
+    val players: List<PlayerState>,
+    val flavorGroups: Map<IceCreamFlavor, List<Card>>,
+    val deck: List<Card>,
+    val discardPile: List<Card>,
+    val turn: TurnState,
+    val maxScoopsToWin: MaxScoopsToWin,
+    val phase: GamePhase,
+    val history: List<GameSnapshot>
+)
+
+enum class GamePhase {
+    Setup,
+    InProgress,
+    Completed
+}
+
+data class GameSnapshot(val state: GameState)

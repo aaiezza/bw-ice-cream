@@ -1,7 +1,18 @@
 package io.github.aaiezza.bwic
 
-class Card {
-}
+data class Scoop(val flavor: IceCreamFlavor)
+
+data class Card(
+    val hintFlavors: List<IceCreamFlavor>,
+    val actualScoop: Scoop
+)
+
+@JvmInline
+value class TurnNumber(val value: Int)
+
+@JvmInline
+value class MaxScoopsToWin(val value: Int)
+
 
 class Deck(
     val numberOfCards: Int,
