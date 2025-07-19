@@ -1,6 +1,6 @@
 package io.github.aaiezza.bwic
 
-class GameEngine(private val maxScoopsToWin: MaxScoopsToWin) {
+class GameEngine {
 
     fun applyAction(state: GameState, action: PlayerAction): GameState {
         return when (action) {
@@ -11,7 +11,7 @@ class GameEngine(private val maxScoopsToWin: MaxScoopsToWin) {
 
     private fun handleReveal(state: GameState): GameState {
         require(state.turn.phase == TurnPhase.RevealCard) { "Must be in RevealCard phase" }
-        require(state.deck.isNotEmpty()) { "Deck is empty" }
+        require(state.deck.asList().isNotEmpty()) { "Deck is empty" }
 
         return state.copy(
             turn = state.turn.copy(phase = TurnPhase.GuessFlavor)
@@ -21,55 +21,48 @@ class GameEngine(private val maxScoopsToWin: MaxScoopsToWin) {
     private fun handleGuess(state: GameState, guessedFlavor: IceCreamFlavor): GameState {
         require(state.turn.phase == TurnPhase.GuessFlavor)
 
-        val card = state.deck.first()
-        val remainingDeck = state.deck.drop(1)
-
+        val (newDeck, card) = state.deck.draw()
         val correct = card.actualScoop.flavor == guessedFlavor
         val currentPlayer = state.players[state.turn.currentPlayerIndex]
-        val newFlavorGroups = state.flavorGroups.toMutableMap()
-
+        val newFlavorGroups = state.flavorGroups.mapValues { it.value.toMutableList() }.toMutableMap()
         val updatedPlayers = state.players.toMutableList()
 
         if (correct) {
-            val claimedScoops = (newFlavorGroups[guessedFlavor] ?: emptyList()).map { it.actualScoop } +
-                    listOf(card.actualScoop)
-
+            val claimed = newFlavorGroups[guessedFlavor].orEmpty().map { it.actualScoop } + card.actualScoop
             updatedPlayers[state.turn.currentPlayerIndex] = currentPlayer.copy(
-                cone = currentPlayer.cone.addScoops(claimedScoops)
+                cone = currentPlayer.cone.addScoops(claimed)
             )
-            newFlavorGroups[guessedFlavor] = emptyList()
+            newFlavorGroups[guessedFlavor] = mutableListOf()
         } else {
-            newFlavorGroups.getOrPut(card.actualScoop.flavor) { emptyList() }
-                .let { list -> newFlavorGroups[card.actualScoop.flavor] = list + card }
+            val flavor = card.actualScoop.flavor
+            val updatedPile = newFlavorGroups.getOrPut(flavor) { mutableListOf() }.toMutableList()
+            updatedPile += card
+            newFlavorGroups[flavor] = updatedPile
         }
 
         val updatedState = state.copy(
             players = updatedPlayers,
-            deck = remainingDeck,
+            deck = newDeck,
             flavorGroups = newFlavorGroups,
             turn = nextTurn(state),
-            phase = if (isVictory(updatedPlayers[state.turn.currentPlayerIndex])) GamePhase.Completed else GamePhase.InProgress
+            phase = if (isVictory(state, updatedPlayers[state.turn.currentPlayerIndex])) GamePhase.Completed else GamePhase.InProgress
         )
 
         return updatedState
     }
 
-    private fun isVictory(player: PlayerState): Boolean {
-        return player.cone.scoops
-            .groupingBy { it.flavor }
-            .eachCount()
-            .any { it.value >= maxScoopsToWin.value }
-    }
+    private fun isVictory(gameState: GameState, player: PlayerState) =
+        player.cone.scoops.size >= gameState.maxScoopsToWin.value
+}
 
-    private fun nextTurn(state: GameState): TurnState {
-        return TurnState(
-            number = TurnNumber(state.turn.number.value + 1),
-            currentPlayerIndex = (state.turn.currentPlayerIndex + 1) % state.players.size,
-            phase = TurnPhase.RevealCard
-        )
-    }
+private fun nextTurn(state: GameState): TurnState {
+    return TurnState(
+        number = TurnNumber(state.turn.number.value + 1),
+        currentPlayerIndex = (state.turn.currentPlayerIndex + 1) % state.players.size,
+        phase = TurnPhase.RevealCard
+    )
+}
 
-    private fun GameState.recordSnapshot(): GameState {
-        return this.copy(history = this.history + GameSnapshot(this))
-    }
+private fun GameState.recordSnapshot(): GameState {
+    return this.copy(history = this.history + GameSnapshot(this))
 }

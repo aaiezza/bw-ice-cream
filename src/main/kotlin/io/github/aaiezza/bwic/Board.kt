@@ -1,7 +1,19 @@
 package io.github.aaiezza.bwic
 
-class Board {
+data class Board(
+    val flavors: List<IceCreamFlavor>,
+    val requiredScoopsToWin: Int,
+    val initialPrePopulatedCards: Int,
+    val availableScoops: Map<IceCreamFlavor, List<Card>>
+) {
+    constructor(setup: BoardSetUp) : this(
+        flavors = setup.flavors,
+        requiredScoopsToWin = setup.claimedCardsToWin,
+        initialPrePopulatedCards = setup.initialPrePopulatedCards,
+        availableScoops = emptyMap()
+    )
 }
+
 
 class BoardSetUp(
     val flavors: List<IceCreamFlavor>,
@@ -10,8 +22,8 @@ class BoardSetUp(
 ) {
     class Builder {
         private val flavors = IceCreamFlavor.defaults.toMutableList()
-        private var initialPrePopulatedCards: Int = 0
-        private var claimedCardsToWin: Int = 0
+        private var initialPrePopulatedCards: Int = 5
+        private var claimedCardsToWin: Int = 9
 
         fun withFlavors(vararg flavors: IceCreamFlavor): Builder = apply {
             this.flavors.clear()

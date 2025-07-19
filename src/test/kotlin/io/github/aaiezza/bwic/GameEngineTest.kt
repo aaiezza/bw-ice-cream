@@ -1,14 +1,12 @@
 package io.github.aaiezza.bwic
 
 import assertk.assertThat
-import assertk.assertions.each
-import assertk.assertions.hasSize
-import assertk.assertions.isEqualTo
+import assertk.assertions.*
 import org.junit.jupiter.api.Test
 
 class GameEngineTest {
 
-    val engine = GameEngine(MaxScoopsToWin(3))
+    val engine = GameEngine()
 
     @Test
     fun `player claims scoops on correct guess`() {
@@ -25,8 +23,7 @@ class GameEngineTest {
                     card.copy(actualScoop = Scoop(IceCreamFlavor.RED))
                 )
             ),
-            deck = listOf(card),
-            discardPile = emptyList(),
+            deck = Deck(listOf(card)),
             turn = TurnState(TurnNumber(1), 0, TurnPhase.GuessFlavor),
             maxScoopsToWin = MaxScoopsToWin(3),
             phase = GamePhase.InProgress,
