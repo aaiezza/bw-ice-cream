@@ -1,0 +1,33 @@
+name: Maven Build & Test
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+
+    steps:
+      # Checkout the repository
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # Set up JDK 23 Corretto
+      - name: Set up JDK 23 (Corretto)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '23'
+          distribution: 'corretto'
+
+      # Run Maven Build
+      - name: Run Maven Build
+        run: mvn clean package
+
+      # Upload the target directory as an artifact
+      - name: Upload Maven Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: maven-build
+          path: target/
